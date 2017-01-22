@@ -27,5 +27,7 @@ compatible) http://docs.python.org/2/library/socketserver.html
 External Sources
 ======================
 HTTP 302: https://en.wikipedia.org/wiki/HTTP_302
+
 os.path: https://docs.python.org/2/library/os.path.html
+
 Mimetypes: https://docs.python.org/2/library/mimetypes.html
