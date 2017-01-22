@@ -1,7 +1,7 @@
 #  coding: utf-8 
-import SocketServer
+import SocketServer, os, mimetypes
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2013 Abram Hindle, Eddie Antonio Santos, Shuming Zhang
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,8 +31,42 @@ class MyWebServer(SocketServer.BaseRequestHandler):
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
-        self.request.sendall("OK")
+
+        # Check if the request method is GET
+        if self.data.split()[0] == "GET":
+            # Redirect http://127.0.0.1:8080/deep to http://127.0.0.1:8080/deep/
+            # https://en.wikipedia.org/wiki/HTTP_302
+            if self.data.split()[1] == "/deep":
+                self.request.sendall("HTTP/1.1 302 Found\r\n" +
+                                     "Location: http://127.0.0.1:8080/deep/\r\n" +
+                                     "\r\n")
+            else:
+                # https://docs.python.org/2/library/os.path.html
+                filepath = os.path.abspath(os.getcwd() + "/www" + self.data.split()[1])
+
+                # Check if the path is under www/
+                if (os.getcwd() + "/www") in filepath:
+                    # Redirect the directory to index.html
+                    if os.path.isdir(filepath):
+                        filepath += "/index.html"
+
+                    # Check if the file exists
+                    if os.path.isfile(filepath):
+                        # https://docs.python.org/2/library/mimetypes.html
+                        filetype = mimetypes.guess_type(filepath)[0]
+                        self.request.sendall("HTTP/1.1 200 OK\r\n" +
+                                             "Content-Type: " + filetype + "\r\n" +
+                                             "\r\n" +
+                                             open(filepath).read())
+                    else:
+                        self.request.sendall("HTTP/1.1 404 Not Found\r\n\r\n")
+                else:
+                    self.request.sendall("HTTP/1.1 404 Not Found\r\n\r\n")
+
+        else:
+            self.request.sendall("HTTP/1.1 405 Method Not Allowed\r\n\r\n")
+
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
@@ -44,3 +78,7 @@ if __name__ == "__main__":
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     server.serve_forever()
+
+
+
+
